@@ -120,6 +120,7 @@ pub fn expand_ldtk_entity_derive(ast: syn::DeriveInput) -> proc_macro::TokenStre
             fn bundle_entity(
                 entity_instance: &bevy_ecs_ldtk::prelude::EntityInstance,
                 layer_instance: &bevy_ecs_ldtk::prelude::LayerInstance,
+                level: bevy_ecs_ldtk::ldtk::loaded_level::LoadedLevel,
                 tileset: Option<&bevy::prelude::Handle<bevy::prelude::Image>>,
                 tileset_definition: Option<&bevy_ecs_ldtk::prelude::TilesetDefinition>,
                 asset_server: &bevy::prelude::AssetServer,
@@ -326,7 +327,7 @@ fn expand_ldtk_entity_attribute(
     {
         syn::Meta::Path(_) => {
             quote! {
-                #field_name: <#field_type as bevy_ecs_ldtk::prelude::LdtkEntity>::bundle_entity(entity_instance, layer_instance, tileset, tileset_definition, asset_server, texture_atlases),
+                #field_name: <#field_type as bevy_ecs_ldtk::prelude::LdtkEntity>::bundle_entity(entity_instance, layer_instance, level, tileset, tileset_definition, asset_server, texture_atlases),
             }
         }
         _ => panic!("#[ldtk_entity] attribute should take the form #[ldtk_entity]"),
