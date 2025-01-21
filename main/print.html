@@ -357,25 +357,11 @@ This code snippet also doubles the scale of the camera and adjusts its transform
 </span>fn main() {
     App::new()
         // other App builders
-        .add_systems(Startup, setup)
+{{#include ../../../../examples/tile_based_game.rs:11}}
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res&lt;AssetServer&gt;) {
-    commands.spawn((
-        Camera2d,
-        OrthographicProjection {
-            scale: 0.5,
-            ..OrthographicProjection::default_2d()
-        },
-        Transform::from_xyz(1280.0 / 4.0, 720.0 / 4.0, 0.0),
-    ));
-
-    commands.spawn(LdtkWorldBundle {
-        ldtk_handle: asset_server.load(&quot;tile-based-game.ldtk&quot;).into(),
-        ..Default::default()
-    });
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:29:43}}</code></pre></pre>
 <p>Finally, insert the <code>LevelSelection</code> resource to tell the plugin to spawn the first level.
 Construct the <code>LevelSelection</code> using its <code>index</code> method to select the first level (0-indexed).</p>
 <pre><pre class="playground"><code class="language-rust no_run"><span class="boring">use bevy::prelude::*;
@@ -383,7 +369,7 @@ Construct the <code>LevelSelection</code> using its <code>index</code> method to
 </span>fn main() {
     App::new()
         // other App builders
-        .insert_resource(LevelSelection::index(0))
+{{#include ../../../../examples/tile_based_game.rs:12}}
         .run();
 }</code></pre></pre>
 <p>Now, run the game with <code>$ cargo run --release</code> to see your first level spawning in Bevy!</p>
@@ -419,8 +405,7 @@ When the plugin spawns entities with these identifiers, it will use the register
 </span>fn main() {
     App::new()
         // other App builders
-        .register_ldtk_entity::&lt;PlayerBundle&gt;(&quot;Player&quot;)
-        .register_ldtk_entity::&lt;GoalBundle&gt;(&quot;Goal&quot;)
+{{#include ../../../../examples/tile_based_game.rs:13:14}}
         .run();
 }
 <span class="boring">#[derive(Default, Bundle, LdtkEntity)]
@@ -455,17 +440,7 @@ Derive <code>Default</code> for this component.
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>#[derive(Default, Component)]
-struct Player;
-
-#[derive(Default, Bundle, LdtkEntity)]
-struct PlayerBundle {
-    player: Player,
-    #[sprite_sheet]
-    sprite_sheet: Sprite,
-    #[grid_coords]
-    grid_coords: GridCoords,
-}
+</span>{{#include ../../../../examples/tile_based_game.rs:45:55}}
 <span class="boring">}</span></code></pre></pre>
 <h2 id="implement-tile-based-movement"><a class="header" href="#implement-tile-based-movement">Implement tile-based movement</a></h2>
 <p>The player now has the components you will need to implement tile-based movement.
@@ -483,24 +458,8 @@ Then, add the new direction to the player entity's <code>GridCoords</code> compo
         .run();
 }
 
-fn move_player_from_input(
-    mut players: Query&lt;&amp;mut GridCoords, With&lt;Player&gt;&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
-) {
-    let movement_direction = if input.just_pressed(KeyCode::KeyW) {
-        GridCoords::new(0, 1)
-    } else if input.just_pressed(KeyCode::KeyA) {
-        GridCoords::new(-1, 0)
-    } else if input.just_pressed(KeyCode::KeyS) {
-        GridCoords::new(0, -1)
-    } else if input.just_pressed(KeyCode::KeyD) {
-        GridCoords::new(1, 0)
-    } else {
-        return;
-    };
-
-    for mut player_grid_coords in players.iter_mut() {
-        let destination = *player_grid_coords + movement_direction;
+{{#include ../../../../examples/tile_based_game.rs:94:96}}
+{{#include ../../../../examples/tile_based_game.rs:98:112}}
         *player_grid_coords = destination;
     }
 }</code></pre></pre>
@@ -518,27 +477,13 @@ For the LDtk project set up in this tutorial using the <code>SunnyLand</code> ti
 </span>fn main() {
     App::new()
         // other App builders
-        .add_systems(
-            Update,
-            (
-                move_player_from_input,
-                translate_grid_coords_entities,
+{{#include ../../../../examples/tile_based_game.rs:15:19}}
             ),
         )
         .run();
 }
 
-const GRID_SIZE: i32 = 16;
-
-fn translate_grid_coords_entities(
-    mut grid_coords_entities: Query&lt;(&amp;mut Transform, &amp;GridCoords), Changed&lt;GridCoords&gt;&gt;,
-) {
-    for (mut transform, grid_coords) in grid_coords_entities.iter_mut() {
-        transform.translation =
-            bevy_ecs_ldtk::utils::grid_coords_to_translation(*grid_coords, IVec2::splat(GRID_SIZE))
-                .extend(transform.translation.z);
-    }
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:119:129}}</code></pre></pre>
 <h2 id="prevent-tile-based-movement-into-walls"><a class="header" href="#prevent-tile-based-movement-into-walls">Prevent tile-based movement into walls</a></h2>
 <p>Movement works logically <em>and</em> visually now.
 However, you might notice that you can move <em>into</em> the walls of the level.
@@ -551,17 +496,11 @@ This bundle actually only needs this one marker component - IntGrid entities spa
 </span>fn main() {
     App::new()
         // other App builders
-        .register_ldtk_int_cell::&lt;WallBundle&gt;(1)
+{{#include ../../../../examples/tile_based_game.rs:24}}
         .run();
 }
 
-#[derive(Default, Component)]
-struct Wall;
-
-#[derive(Default, Bundle, LdtkIntCell)]
-struct WallBundle {
-    wall: Wall,
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:69:75}}</code></pre></pre>
 <p>There are a lot of ways to go about implementing the collision systems.
 Naively, you could query for all of the <code>Wall</code> entities every time the player tries to move and check their <code>GridCoords</code> values.
 In this tutorial, you will implement something a little more optimized: caching the wall locations into a resource when levels spawn.</p>
@@ -576,26 +515,11 @@ Then, implement a method <code>fn in_wall(&amp;self, grid_coords: &amp;GridCoord
 fn main() {
     App::new()
         // other App builders
-        .init_resource::&lt;LevelWalls&gt;()
+{{#include ../../../../examples/tile_based_game.rs:25}}
         .run();
 }
 
-#[derive(Default, Resource)]
-struct LevelWalls {
-    wall_locations: HashSet&lt;GridCoords&gt;,
-    level_width: i32,
-    level_height: i32,
-}
-
-impl LevelWalls {
-    fn in_wall(&amp;self, grid_coords: &amp;GridCoords) -&gt; bool {
-        grid_coords.x &lt; 0
-            || grid_coords.y &lt; 0
-            || grid_coords.x &gt;= self.level_width
-            || grid_coords.y &gt;= self.level_height
-            || self.wall_locations.contains(grid_coords)
-    }
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:77:92}}</code></pre></pre>
 <p>Now, add a system that listens for <code>LevelEvent::Spawned</code> and populates this resource.
 It will need access to all of the wall locations to populate the <code>HashSet</code> (<code>Query&lt;&amp;GridCoords, With&lt;Wall&gt;&gt;</code>).
 It will also need access to the <code>LdtkProject</code> data to find the current level's width/height (<code>Query&lt;&amp;LdtkProjectHandle&gt;</code> and <code>Res&lt;Assets&lt;LdtkProject&gt;&gt;</code>).</p>
@@ -625,45 +549,13 @@ It will also need access to the <code>LdtkProject</code> data to find the curren
 </span>fn main() {
     App::new()
         // other App builders
-        .add_systems(
-            Update,
-            (
-                move_player_from_input,
-                translate_grid_coords_entities,
-                cache_wall_locations,
+{{#include ../../../../examples/tile_based_game.rs:15:20}}
             )
         )
         .run();
 }
 
-fn cache_wall_locations(
-    mut level_walls: ResMut&lt;LevelWalls&gt;,
-    mut level_events: EventReader&lt;LevelEvent&gt;,
-    walls: Query&lt;&amp;GridCoords, With&lt;Wall&gt;&gt;,
-    ldtk_project_entities: Query&lt;&amp;LdtkProjectHandle&gt;,
-    ldtk_project_assets: Res&lt;Assets&lt;LdtkProject&gt;&gt;,
-) {
-    for level_event in level_events.read() {
-        if let LevelEvent::Spawned(level_iid) = level_event {
-            let ldtk_project = ldtk_project_assets
-                .get(ldtk_project_entities.single())
-                .expect(&quot;LdtkProject should be loaded when level is spawned&quot;);
-            let level = ldtk_project
-                .get_raw_level_by_iid(level_iid.get())
-                .expect(&quot;spawned level should exist in project&quot;);
-
-            let wall_locations = walls.iter().copied().collect();
-
-            let new_level_walls = LevelWalls {
-                wall_locations,
-                level_width: level.px_wid / GRID_SIZE,
-                level_height: level.px_hei / GRID_SIZE,
-            };
-
-            *level_walls = new_level_walls;
-        }
-    }
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:131:158}}</code></pre></pre>
 <p>Finally, update the <code>move_player_from_input</code> system to access the <code>LevelWalls</code> resource and check whether or not the player's destination is in a wall.</p>
 <pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -687,30 +579,7 @@ fn cache_wall_locations(
 </span><span class="boring">            || self.wall_locations.contains(grid_coords)
 </span><span class="boring">    }
 </span><span class="boring">}
-</span>fn move_player_from_input(
-    mut players: Query&lt;&amp;mut GridCoords, With&lt;Player&gt;&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
-    level_walls: Res&lt;LevelWalls&gt;,
-) {
-    let movement_direction = if input.just_pressed(KeyCode::KeyW) {
-        GridCoords::new(0, 1)
-    } else if input.just_pressed(KeyCode::KeyA) {
-        GridCoords::new(-1, 0)
-    } else if input.just_pressed(KeyCode::KeyS) {
-        GridCoords::new(0, -1)
-    } else if input.just_pressed(KeyCode::KeyD) {
-        GridCoords::new(1, 0)
-    } else {
-        return;
-    };
-
-    for mut player_grid_coords in players.iter_mut() {
-        let destination = *player_grid_coords + movement_direction;
-        if !level_walls.in_wall(&amp;destination) {
-            *player_grid_coords = destination;
-        }
-    }
-}
+</span>{{#include ../../../../examples/tile_based_game.rs:94:117}}
 <span class="boring">}</span></code></pre></pre>
 <p>With this check in place, the player should now be unable to move into walls!</p>
 <h2 id="trigger-level-transitions-on-victory"><a class="header" href="#trigger-level-transitions-on-victory">Trigger level transitions on victory</a></h2>
@@ -721,17 +590,7 @@ When the player reaches the goal, the next level should spawn until there are no
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>#[derive(Default, Component)]
-struct Goal;
-
-#[derive(Default, Bundle, LdtkEntity)]
-struct GoalBundle {
-    goal: Goal,
-    #[sprite_sheet]
-    sprite_sheet: Sprite,
-    #[grid_coords]
-    grid_coords: GridCoords,
-}
+</span>{{#include ../../../../examples/tile_based_game.rs:57:67}}
 <span class="boring">}</span></code></pre></pre>
 <p>Then, write a system that checks if the player's <code>GridCoords</code> and the goal's <code>GridCoords</code> match.
 For a small optimization, filter the player query for <code>Changed&lt;GridCoords&gt;</code> so it's only populated if the player moves.
@@ -749,36 +608,11 @@ If they do match, update the <code>LevelSelection</code> resource, increasing it
 </span>fn main() {
     App::new()
         // other App builders
-        .add_systems(
-            Update,
-            (
-                move_player_from_input,
-                translate_grid_coords_entities,
-                cache_wall_locations,
-                check_goal,
-            ),
-        )
+{{#include ../../../../examples/tile_based_game.rs:15:23}}
         .run();
 }
 
-fn check_goal(
-    level_selection: ResMut&lt;LevelSelection&gt;,
-    players: Query&lt;&amp;GridCoords, (With&lt;Player&gt;, Changed&lt;GridCoords&gt;)&gt;,
-    goals: Query&lt;&amp;GridCoords, With&lt;Goal&gt;&gt;,
-) {
-    if players
-        .iter()
-        .zip(goals.iter())
-        .any(|(player_grid_coords, goal_grid_coords)| player_grid_coords == goal_grid_coords)
-    {
-        let indices = match level_selection.into_inner() {
-            LevelSelection::Indices(indices) =&gt; indices,
-            _ =&gt; panic!(&quot;level selection should always be Indices in this game&quot;),
-        };
-
-        indices.level += 1;
-    }
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:160::}}</code></pre></pre>
 <p>With this, the simple tile-based game is complete.
 When you navigate the player to the goal, the next level will begin until there are no levels remaining.</p>
 <div style="width:100%;height:0px;position:relative;padding-bottom:56.250%;"><iframe src="https://streamable.com/e/i342f8" frameborder="0" width="100%" height="100%" allowfullscreen style="width:100%;height:100%;position:absolute;left:0px;top:0px;overflow:hidden;"></iframe></div>
@@ -816,29 +650,7 @@ Instead of selecting one level globally with a <code>LevelSelection</code> resou
 From the <code>level_set</code> cargo example:</p>
 <pre><pre class="playground"><code class="language-rust no_run"><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>const LEVEL_IIDS: [&amp;str; 8] = [
-    &quot;a3591db0-66b0-11ec-9cd7-43878cf4d0ab&quot;,
-    &quot;a35944c0-66b0-11ec-9cd7-6b4e2322a69e&quot;,
-    &quot;a35992e0-66b0-11ec-9cd7-8b2ebd1b98e2&quot;,
-    &quot;a359b9f0-66b0-11ec-9cd7-25dfb937d033&quot;,
-    &quot;a35a2f20-66b0-11ec-9cd7-db6f994e2834&quot;,
-    &quot;a35aa451-66b0-11ec-9cd7-438de356526d&quot;,
-    &quot;a35acb61-66b0-11ec-9cd7-f76e35cfda30&quot;,
-    &quot;a35b8eb0-66b0-11ec-9cd7-3d16ec48af10&quot;,
-];
-
-fn setup(mut commands: Commands, asset_server: Res&lt;AssetServer&gt;) {
-    commands.spawn(Camera2d);
-
-    let level_set = LevelSet::from_iids(LEVEL_IIDS);
-
-    commands.spawn(LdtkWorldBundle {
-        ldtk_handle: asset_server.load(&quot;WorldMap_Free_layout.ldtk&quot;).into(),
-        level_set,
-        transform: Transform::from_xyz(-256., -144., 0.),
-        ..Default::default()
-    });
-}
+</span>{{#include ../../../examples/level_set.rs:28:50}}
 <span class="boring">fn main() {}</span></code></pre></pre>
 <p>This component is actually used by <code>LevelSelection</code> under the hood.
 So, in order for this workflow to work properly, no <code>LevelSelection</code> resource can exist in the world.
@@ -1078,8 +890,7 @@ This code is used in the <code>field_instances</code> cargo example, and facilit
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>#[derive(Debug, Default, Deref, DerefMut, Component)]
-pub struct UnresolvedMotherRef(Option&lt;EntityIid&gt;);
+</span>{{ #include ../../../examples/field_instances/mother.rs:10:11 }}
 <span class="boring">}</span></code></pre></pre>
 <p>Create a method for constructing this component from an <code>&amp;EntityInstance</code>.
 This should retrieve the value of the entity reference field instance on the LDtk entity.
@@ -1088,18 +899,8 @@ Most likely, you'll use a hard-coded field identifier (&quot;mother&quot; in thi
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span><span class="boring">pub struct UnresolvedMotherRef(Option&lt;EntityIid&gt;);
-</span>impl UnresolvedMotherRef {
-    pub fn from_mother_field(entity_instance: &amp;EntityInstance) -&gt; UnresolvedMotherRef {
-        UnresolvedMotherRef(
-            entity_instance
-                .get_maybe_entity_ref_field(&quot;mother&quot;)
-                .expect(&quot;expected entity to have mother entity ref field&quot;)
-                .as_ref()
-                .map(|entity_ref| EntityIid::new(entity_ref.entity_iid.clone())),
-        )
-    }
-}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:11 }}
+</span>{{ #include ../../../examples/field_instances/mother.rs:13:23 }}
 <span class="boring">}</span></code></pre></pre>
 <p>Add this component to the <code>LdtkEntity</code> and configure it to be constructed using this method.
 This guide assumes that you've already registered this bundle to the app.</p>
@@ -1107,16 +908,11 @@ This guide assumes that you've already registered this bundle to the app.</p>
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span><span class="boring">#[derive(Debug, Default, Deref, DerefMut, Component)]
-</span><span class="boring">pub struct UnresolvedMotherRef(Option&lt;EntityIid&gt;);
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:10 }}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:11 }}
 </span><span class="boring">impl UnresolvedMotherRef { fn from_mother_field(_: &amp;EntityInstance) -&gt; UnresolvedMotherRef { todo!() } }
-</span>#[derive(Default, Bundle, LdtkEntity)]
-pub struct EnemyBundle {
-    #[with(UnresolvedMotherRef::from_mother_field)]
-    unresolved_mother: UnresolvedMotherRef,
-    #[sprite_sheet]
-    sprite_sheet: Sprite,
-}
+</span>{{ #include ../../../examples/field_instances/enemy.rs:7:8}}
+{{ #include ../../../examples/field_instances/enemy.rs:15:19}}
 <span class="boring">}</span></code></pre></pre>
 <h2 id="resolve-reference-in-post-processing"><a class="header" href="#resolve-reference-in-post-processing">Resolve reference in post-processing</a></h2>
 <p>Create a second relational component that stores the actual bevy <code>Entity</code> that this <code>Unresolved</code> reference should &quot;resolve&quot; to.</p>
@@ -1124,41 +920,18 @@ pub struct EnemyBundle {
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>#[derive(Debug, Deref, DerefMut, Component, Reflect)]
-pub struct Mother(Entity);
+</span>{{ #include ../../../examples/field_instances/mother.rs:26:27 }}
 <span class="boring">}</span></code></pre></pre>
 <p>Finally, create a <a href="how-to-guides/../explanation/game-logic-integration.html#post-processing-plugin-spawned-entities">&quot;post-processing&quot;</a> system that takes entities with the <code>Unresolved</code> component, finds the entity with the matching <code>EntityIid</code>, and replaces the <code>Unresolved</code> component with the relational component.</p>
 <pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span><span class="boring">#[derive(Debug, Default, Deref, DerefMut, Component)]
-</span><span class="boring">pub struct UnresolvedMotherRef(Option&lt;EntityIid&gt;);
-</span><span class="boring">#[derive(Debug, Deref, DerefMut, Component, Reflect)]
-</span><span class="boring">pub struct Mother(Entity);
-</span>pub fn resolve_mother_references(
-    mut commands: Commands,
-    unresolved_mothers: Query&lt;(Entity, &amp;UnresolvedMotherRef), Added&lt;UnresolvedMotherRef&gt;&gt;,
-    ldtk_entities: Query&lt;(Entity, &amp;EntityIid)&gt;,
-) {
-    for (child_entity, unresolved_mother_ref) in unresolved_mothers.iter() {
-        if let Some(mother_iid) = unresolved_mother_ref.0.as_ref() {
-            let (mother_entity, _) = ldtk_entities
-                .iter()
-                .find(|(_, iid)| *iid == mother_iid)
-                .expect(&quot;enemy's mother entity should exist&quot;);
-
-            commands
-                .entity(child_entity)
-                .remove::&lt;UnresolvedMotherRef&gt;()
-                .insert(Mother(mother_entity));
-        } else {
-            commands
-                .entity(child_entity)
-                .remove::&lt;UnresolvedMotherRef&gt;();
-        }
-    }
-}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:10 }}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:11 }}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:26 }}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:27 }}
+</span>{{ #include ../../../examples/field_instances/mother.rs:29:51 }}
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="respawn-levels-and-worlds"><a class="header" href="#respawn-levels-and-worlds">Respawn Levels and Worlds</a></h1>
 <p>Internally, <code>bevy_ecs_ldtk</code> uses a <a href="https://docs.rs/bevy_ecs_ldtk/0.11.0/bevy_ecs_ldtk/prelude/struct.Respawn.html"><code>Respawn</code></a> component on worlds and levels to assist in the spawning process. <!-- x-release-please-version -->
@@ -1171,15 +944,7 @@ This is especially easy if, like most users, you only have one world in your gam
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>fn respawn_world(
-    mut commands: Commands,
-    ldtk_projects: Query&lt;Entity, With&lt;LdtkProjectHandle&gt;&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
-) {
-    if input.just_pressed(KeyCode::KeyR) {
-        commands.entity(ldtk_projects.single()).insert(Respawn);
-    }
-}
+</span>{{ #include ../../../examples/collectathon/respawn.rs:33:41 }}
 <span class="boring">}</span></code></pre></pre>
 <p>Note that this <em>will</em> respawn <a href="how-to-guides/../explanation/anatomy-of-the-world.html#worldly-entities">worldly</a> entities too.</p>
 <h2 id="respawn-the-currently-selected-level"><a class="header" href="#respawn-the-currently-selected-level">Respawn the currently-selected level</a></h2>
@@ -1208,25 +973,7 @@ If you share this assumption, get the <code>LevelIid</code> from the <code>Level
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>fn respawn_level(
-    mut commands: Commands,
-    level_selection: Res&lt;LevelSelection&gt;,
-    levels: Query&lt;(Entity, &amp;LevelIid)&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
-) {
-    if input.just_pressed(KeyCode::KeyL) {
-        let level_selection_iid = match level_selection.as_ref() {
-            LevelSelection::Iid(iid) =&gt; iid,
-            _ =&gt; panic!(&quot;level should always be selected by iid in this example&quot;),
-        };
-
-        for (level_entity, level_iid) in levels.iter() {
-            if level_iid == level_selection_iid {
-                commands.entity(level_entity).insert(Respawn);
-            }
-        }
-    }
-}
+</span>{{ #include ../../../examples/collectathon/respawn.rs:13:31 }}
 <span class="boring">}</span></code></pre></pre>
 <p>However, if you cannot make the same assumption, access the <code>LdtkProject</code> asset data and search for the level matching your <code>LevelSelection</code>.
 There is a method on <code>LdtkProject</code> to perform this search.</p>
@@ -1234,11 +981,7 @@ There is a method on <code>LdtkProject</code> to perform this search.</p>
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>fn respawn_level(
-    mut commands: Commands,
-    level_selection: Res&lt;LevelSelection&gt;,
-    levels: Query&lt;(Entity, &amp;LevelIid)&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
+</span>{{ #include ../../../examples/collectathon/respawn.rs:13:17 }}
     ldtk_projects: Query&lt;&amp;LdtkProjectHandle&gt;,
     ldtk_project_assets: Res&lt;Assets&lt;LdtkProject&gt;&gt;,
 ) {
@@ -1276,12 +1019,7 @@ Use the <a href="how-to-guides/../explanation/level-selection.html#levelselectio
 </span>fn main() {
     App::new()
         // Other App builders
-        .insert_resource(LdtkSettings {
-            level_spawn_behavior: LevelSpawnBehavior::UseWorldTranslation {
-                load_level_neighbors: true,
-            },
-            ..default()
-        })
+{{ #include ../../../examples/collectathon/main.rs:13:18 }}
         .run();
 }</code></pre></pre>
 <h2 id="determine-bounds-of-spawned-levels-and-update-level-selection"><a class="header" href="#determine-bounds-of-spawned-levels-and-update-level-selection">Determine bounds of spawned levels and update level selection</a></h2>
@@ -1296,22 +1034,7 @@ Then, get the raw level data for every spawned level using the level entity's <c
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
 </span><span class="boring">#[derive(Component)]
 </span><span class="boring">struct Player;
-</span>fn level_selection_follow_player(
-    players: Query&lt;&amp;GlobalTransform, With&lt;Player&gt;&gt;,
-    levels: Query&lt;(&amp;LevelIid, &amp;GlobalTransform)&gt;,
-    ldtk_projects: Query&lt;&amp;LdtkProjectHandle&gt;,
-    ldtk_project_assets: Res&lt;Assets&lt;LdtkProject&gt;&gt;,
-    mut level_selection: ResMut&lt;LevelSelection&gt;,
-) {
-    if let Ok(player_transform) = players.get_single() {
-        let ldtk_project = ldtk_project_assets
-            .get(ldtk_projects.single())
-            .expect(&quot;ldtk project should be loaded before player is spawned&quot;);
-
-        for (level_iid, level_transform) in levels.iter() {
-            let level = ldtk_project
-                .get_raw_level_by_iid(level_iid.get())
-                .expect(&quot;level should exist in only project&quot;);
+</span>{{ #include ../../../examples/collectathon/player.rs:59:74 }}
         }
     }
 }
@@ -1323,16 +1046,7 @@ Add the raw level's <code>px_wid</code> and <code>pix_hei</code> values to the l
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::ldtk::Level;
 </span><span class="boring">fn foo(level_transform: &amp;GlobalTransform, level: &amp;Level) {
-</span>            let level_bounds = Rect {
-                min: Vec2::new(
-                    level_transform.translation().x,
-                    level_transform.translation().y,
-                ),
-                max: Vec2::new(
-                    level_transform.translation().x + level.px_wid as f32,
-                    level_transform.translation().y + level.px_hei as f32,
-                ),
-            };
+</span>{{ #include ../../../examples/collectathon/player.rs:76:85 }}
 <span class="boring">}
 </span><span class="boring">}</span></code></pre></pre>
 <p>After creating a <code>Rect</code> of the level bounds, check if the player is inside those bounds and update the <code>LevelSelection</code> resource accordingly.
@@ -1343,40 +1057,7 @@ The full system should look something like this:</p>
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
 </span><span class="boring">#[derive(Component)]
 </span><span class="boring">struct Player;
-</span>fn level_selection_follow_player(
-    players: Query&lt;&amp;GlobalTransform, With&lt;Player&gt;&gt;,
-    levels: Query&lt;(&amp;LevelIid, &amp;GlobalTransform)&gt;,
-    ldtk_projects: Query&lt;&amp;LdtkProjectHandle&gt;,
-    ldtk_project_assets: Res&lt;Assets&lt;LdtkProject&gt;&gt;,
-    mut level_selection: ResMut&lt;LevelSelection&gt;,
-) {
-    if let Ok(player_transform) = players.get_single() {
-        let ldtk_project = ldtk_project_assets
-            .get(ldtk_projects.single())
-            .expect(&quot;ldtk project should be loaded before player is spawned&quot;);
-
-        for (level_iid, level_transform) in levels.iter() {
-            let level = ldtk_project
-                .get_raw_level_by_iid(level_iid.get())
-                .expect(&quot;level should exist in only project&quot;);
-
-            let level_bounds = Rect {
-                min: Vec2::new(
-                    level_transform.translation().x,
-                    level_transform.translation().y,
-                ),
-                max: Vec2::new(
-                    level_transform.translation().x + level.px_wid as f32,
-                    level_transform.translation().y + level.px_hei as f32,
-                ),
-            };
-
-            if level_bounds.contains(player_transform.translation().truncate()) {
-                *level_selection = LevelSelection::Iid(level_iid.clone());
-            }
-        }
-    }
-}
+</span>{{ #include ../../../examples/collectathon/player.rs:59:92 }}
 <span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="migration-guides"><a class="header" href="#migration-guides">Migration Guides</a></h1>
 <p>Most releases of <code>bevy_ecs_ldtk</code> introduce breaking changes.

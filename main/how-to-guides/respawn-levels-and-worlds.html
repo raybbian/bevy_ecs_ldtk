@@ -182,15 +182,7 @@ This is especially easy if, like most users, you only have one world in your gam
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>fn respawn_world(
-    mut commands: Commands,
-    ldtk_projects: Query&lt;Entity, With&lt;LdtkProjectHandle&gt;&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
-) {
-    if input.just_pressed(KeyCode::KeyR) {
-        commands.entity(ldtk_projects.single()).insert(Respawn);
-    }
-}
+</span>{{ #include ../../../examples/collectathon/respawn.rs:33:41 }}
 <span class="boring">}</span></code></pre></pre>
 <p>Note that this <em>will</em> respawn <a href="../explanation/anatomy-of-the-world.html#worldly-entities">worldly</a> entities too.</p>
 <h2 id="respawn-the-currently-selected-level"><a class="header" href="#respawn-the-currently-selected-level">Respawn the currently-selected level</a></h2>
@@ -219,25 +211,7 @@ If you share this assumption, get the <code>LevelIid</code> from the <code>Level
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>fn respawn_level(
-    mut commands: Commands,
-    level_selection: Res&lt;LevelSelection&gt;,
-    levels: Query&lt;(Entity, &amp;LevelIid)&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
-) {
-    if input.just_pressed(KeyCode::KeyL) {
-        let level_selection_iid = match level_selection.as_ref() {
-            LevelSelection::Iid(iid) =&gt; iid,
-            _ =&gt; panic!(&quot;level should always be selected by iid in this example&quot;),
-        };
-
-        for (level_entity, level_iid) in levels.iter() {
-            if level_iid == level_selection_iid {
-                commands.entity(level_entity).insert(Respawn);
-            }
-        }
-    }
-}
+</span>{{ #include ../../../examples/collectathon/respawn.rs:13:31 }}
 <span class="boring">}</span></code></pre></pre>
 <p>However, if you cannot make the same assumption, access the <code>LdtkProject</code> asset data and search for the level matching your <code>LevelSelection</code>.
 There is a method on <code>LdtkProject</code> to perform this search.</p>
@@ -245,11 +219,7 @@ There is a method on <code>LdtkProject</code> to perform this search.</p>
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>fn respawn_level(
-    mut commands: Commands,
-    level_selection: Res&lt;LevelSelection&gt;,
-    levels: Query&lt;(Entity, &amp;LevelIid)&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
+</span>{{ #include ../../../examples/collectathon/respawn.rs:13:17 }}
     ldtk_projects: Query&lt;&amp;LdtkProjectHandle&gt;,
     ldtk_project_assets: Res&lt;Assets&lt;LdtkProject&gt;&gt;,
 ) {

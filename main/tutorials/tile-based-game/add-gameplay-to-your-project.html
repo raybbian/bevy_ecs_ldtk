@@ -191,17 +191,7 @@ Derive <code>Default</code> for this component.
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>#[derive(Default, Component)]
-struct Player;
-
-#[derive(Default, Bundle, LdtkEntity)]
-struct PlayerBundle {
-    player: Player,
-    #[sprite_sheet]
-    sprite_sheet: Sprite,
-    #[grid_coords]
-    grid_coords: GridCoords,
-}
+</span>{{#include ../../../../examples/tile_based_game.rs:45:55}}
 <span class="boring">}</span></code></pre></pre>
 <h2 id="implement-tile-based-movement"><a class="header" href="#implement-tile-based-movement">Implement tile-based movement</a></h2>
 <p>The player now has the components you will need to implement tile-based movement.
@@ -219,24 +209,8 @@ Then, add the new direction to the player entity's <code>GridCoords</code> compo
         .run();
 }
 
-fn move_player_from_input(
-    mut players: Query&lt;&amp;mut GridCoords, With&lt;Player&gt;&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
-) {
-    let movement_direction = if input.just_pressed(KeyCode::KeyW) {
-        GridCoords::new(0, 1)
-    } else if input.just_pressed(KeyCode::KeyA) {
-        GridCoords::new(-1, 0)
-    } else if input.just_pressed(KeyCode::KeyS) {
-        GridCoords::new(0, -1)
-    } else if input.just_pressed(KeyCode::KeyD) {
-        GridCoords::new(1, 0)
-    } else {
-        return;
-    };
-
-    for mut player_grid_coords in players.iter_mut() {
-        let destination = *player_grid_coords + movement_direction;
+{{#include ../../../../examples/tile_based_game.rs:94:96}}
+{{#include ../../../../examples/tile_based_game.rs:98:112}}
         *player_grid_coords = destination;
     }
 }</code></pre></pre>
@@ -254,27 +228,13 @@ For the LDtk project set up in this tutorial using the <code>SunnyLand</code> ti
 </span>fn main() {
     App::new()
         // other App builders
-        .add_systems(
-            Update,
-            (
-                move_player_from_input,
-                translate_grid_coords_entities,
+{{#include ../../../../examples/tile_based_game.rs:15:19}}
             ),
         )
         .run();
 }
 
-const GRID_SIZE: i32 = 16;
-
-fn translate_grid_coords_entities(
-    mut grid_coords_entities: Query&lt;(&amp;mut Transform, &amp;GridCoords), Changed&lt;GridCoords&gt;&gt;,
-) {
-    for (mut transform, grid_coords) in grid_coords_entities.iter_mut() {
-        transform.translation =
-            bevy_ecs_ldtk::utils::grid_coords_to_translation(*grid_coords, IVec2::splat(GRID_SIZE))
-                .extend(transform.translation.z);
-    }
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:119:129}}</code></pre></pre>
 <h2 id="prevent-tile-based-movement-into-walls"><a class="header" href="#prevent-tile-based-movement-into-walls">Prevent tile-based movement into walls</a></h2>
 <p>Movement works logically <em>and</em> visually now.
 However, you might notice that you can move <em>into</em> the walls of the level.
@@ -287,17 +247,11 @@ This bundle actually only needs this one marker component - IntGrid entities spa
 </span>fn main() {
     App::new()
         // other App builders
-        .register_ldtk_int_cell::&lt;WallBundle&gt;(1)
+{{#include ../../../../examples/tile_based_game.rs:24}}
         .run();
 }
 
-#[derive(Default, Component)]
-struct Wall;
-
-#[derive(Default, Bundle, LdtkIntCell)]
-struct WallBundle {
-    wall: Wall,
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:69:75}}</code></pre></pre>
 <p>There are a lot of ways to go about implementing the collision systems.
 Naively, you could query for all of the <code>Wall</code> entities every time the player tries to move and check their <code>GridCoords</code> values.
 In this tutorial, you will implement something a little more optimized: caching the wall locations into a resource when levels spawn.</p>
@@ -312,26 +266,11 @@ Then, implement a method <code>fn in_wall(&amp;self, grid_coords: &amp;GridCoord
 fn main() {
     App::new()
         // other App builders
-        .init_resource::&lt;LevelWalls&gt;()
+{{#include ../../../../examples/tile_based_game.rs:25}}
         .run();
 }
 
-#[derive(Default, Resource)]
-struct LevelWalls {
-    wall_locations: HashSet&lt;GridCoords&gt;,
-    level_width: i32,
-    level_height: i32,
-}
-
-impl LevelWalls {
-    fn in_wall(&amp;self, grid_coords: &amp;GridCoords) -&gt; bool {
-        grid_coords.x &lt; 0
-            || grid_coords.y &lt; 0
-            || grid_coords.x &gt;= self.level_width
-            || grid_coords.y &gt;= self.level_height
-            || self.wall_locations.contains(grid_coords)
-    }
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:77:92}}</code></pre></pre>
 <p>Now, add a system that listens for <code>LevelEvent::Spawned</code> and populates this resource.
 It will need access to all of the wall locations to populate the <code>HashSet</code> (<code>Query&lt;&amp;GridCoords, With&lt;Wall&gt;&gt;</code>).
 It will also need access to the <code>LdtkProject</code> data to find the current level's width/height (<code>Query&lt;&amp;LdtkProjectHandle&gt;</code> and <code>Res&lt;Assets&lt;LdtkProject&gt;&gt;</code>).</p>
@@ -361,45 +300,13 @@ It will also need access to the <code>LdtkProject</code> data to find the curren
 </span>fn main() {
     App::new()
         // other App builders
-        .add_systems(
-            Update,
-            (
-                move_player_from_input,
-                translate_grid_coords_entities,
-                cache_wall_locations,
+{{#include ../../../../examples/tile_based_game.rs:15:20}}
             )
         )
         .run();
 }
 
-fn cache_wall_locations(
-    mut level_walls: ResMut&lt;LevelWalls&gt;,
-    mut level_events: EventReader&lt;LevelEvent&gt;,
-    walls: Query&lt;&amp;GridCoords, With&lt;Wall&gt;&gt;,
-    ldtk_project_entities: Query&lt;&amp;LdtkProjectHandle&gt;,
-    ldtk_project_assets: Res&lt;Assets&lt;LdtkProject&gt;&gt;,
-) {
-    for level_event in level_events.read() {
-        if let LevelEvent::Spawned(level_iid) = level_event {
-            let ldtk_project = ldtk_project_assets
-                .get(ldtk_project_entities.single())
-                .expect(&quot;LdtkProject should be loaded when level is spawned&quot;);
-            let level = ldtk_project
-                .get_raw_level_by_iid(level_iid.get())
-                .expect(&quot;spawned level should exist in project&quot;);
-
-            let wall_locations = walls.iter().copied().collect();
-
-            let new_level_walls = LevelWalls {
-                wall_locations,
-                level_width: level.px_wid / GRID_SIZE,
-                level_height: level.px_hei / GRID_SIZE,
-            };
-
-            *level_walls = new_level_walls;
-        }
-    }
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:131:158}}</code></pre></pre>
 <p>Finally, update the <code>move_player_from_input</code> system to access the <code>LevelWalls</code> resource and check whether or not the player's destination is in a wall.</p>
 <pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -423,30 +330,7 @@ fn cache_wall_locations(
 </span><span class="boring">            || self.wall_locations.contains(grid_coords)
 </span><span class="boring">    }
 </span><span class="boring">}
-</span>fn move_player_from_input(
-    mut players: Query&lt;&amp;mut GridCoords, With&lt;Player&gt;&gt;,
-    input: Res&lt;ButtonInput&lt;KeyCode&gt;&gt;,
-    level_walls: Res&lt;LevelWalls&gt;,
-) {
-    let movement_direction = if input.just_pressed(KeyCode::KeyW) {
-        GridCoords::new(0, 1)
-    } else if input.just_pressed(KeyCode::KeyA) {
-        GridCoords::new(-1, 0)
-    } else if input.just_pressed(KeyCode::KeyS) {
-        GridCoords::new(0, -1)
-    } else if input.just_pressed(KeyCode::KeyD) {
-        GridCoords::new(1, 0)
-    } else {
-        return;
-    };
-
-    for mut player_grid_coords in players.iter_mut() {
-        let destination = *player_grid_coords + movement_direction;
-        if !level_walls.in_wall(&amp;destination) {
-            *player_grid_coords = destination;
-        }
-    }
-}
+</span>{{#include ../../../../examples/tile_based_game.rs:94:117}}
 <span class="boring">}</span></code></pre></pre>
 <p>With this check in place, the player should now be unable to move into walls!</p>
 <h2 id="trigger-level-transitions-on-victory"><a class="header" href="#trigger-level-transitions-on-victory">Trigger level transitions on victory</a></h2>
@@ -457,17 +341,7 @@ When the player reaches the goal, the next level should spawn until there are no
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>#[derive(Default, Component)]
-struct Goal;
-
-#[derive(Default, Bundle, LdtkEntity)]
-struct GoalBundle {
-    goal: Goal,
-    #[sprite_sheet]
-    sprite_sheet: Sprite,
-    #[grid_coords]
-    grid_coords: GridCoords,
-}
+</span>{{#include ../../../../examples/tile_based_game.rs:57:67}}
 <span class="boring">}</span></code></pre></pre>
 <p>Then, write a system that checks if the player's <code>GridCoords</code> and the goal's <code>GridCoords</code> match.
 For a small optimization, filter the player query for <code>Changed&lt;GridCoords&gt;</code> so it's only populated if the player moves.
@@ -485,36 +359,11 @@ If they do match, update the <code>LevelSelection</code> resource, increasing it
 </span>fn main() {
     App::new()
         // other App builders
-        .add_systems(
-            Update,
-            (
-                move_player_from_input,
-                translate_grid_coords_entities,
-                cache_wall_locations,
-                check_goal,
-            ),
-        )
+{{#include ../../../../examples/tile_based_game.rs:15:23}}
         .run();
 }
 
-fn check_goal(
-    level_selection: ResMut&lt;LevelSelection&gt;,
-    players: Query&lt;&amp;GridCoords, (With&lt;Player&gt;, Changed&lt;GridCoords&gt;)&gt;,
-    goals: Query&lt;&amp;GridCoords, With&lt;Goal&gt;&gt;,
-) {
-    if players
-        .iter()
-        .zip(goals.iter())
-        .any(|(player_grid_coords, goal_grid_coords)| player_grid_coords == goal_grid_coords)
-    {
-        let indices = match level_selection.into_inner() {
-            LevelSelection::Indices(indices) =&gt; indices,
-            _ =&gt; panic!(&quot;level selection should always be Indices in this game&quot;),
-        };
-
-        indices.level += 1;
-    }
-}</code></pre></pre>
+{{#include ../../../../examples/tile_based_game.rs:160::}}</code></pre></pre>
 <p>With this, the simple tile-based game is complete.
 When you navigate the player to the goal, the next level will begin until there are no levels remaining.</p>
 <div style="width:100%;height:0px;position:relative;padding-bottom:56.250%;"><iframe src="https://streamable.com/e/i342f8" frameborder="0" width="100%" height="100%" allowfullscreen style="width:100%;height:100%;position:absolute;left:0px;top:0px;overflow:hidden;"></iframe></div>

@@ -184,12 +184,7 @@ Use the <a href="../explanation/level-selection.html#levelselection-resource">&q
 </span>fn main() {
     App::new()
         // Other App builders
-        .insert_resource(LdtkSettings {
-            level_spawn_behavior: LevelSpawnBehavior::UseWorldTranslation {
-                load_level_neighbors: true,
-            },
-            ..default()
-        })
+{{ #include ../../../examples/collectathon/main.rs:13:18 }}
         .run();
 }</code></pre></pre>
 <h2 id="determine-bounds-of-spawned-levels-and-update-level-selection"><a class="header" href="#determine-bounds-of-spawned-levels-and-update-level-selection">Determine bounds of spawned levels and update level selection</a></h2>
@@ -204,22 +199,7 @@ Then, get the raw level data for every spawned level using the level entity's <c
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
 </span><span class="boring">#[derive(Component)]
 </span><span class="boring">struct Player;
-</span>fn level_selection_follow_player(
-    players: Query&lt;&amp;GlobalTransform, With&lt;Player&gt;&gt;,
-    levels: Query&lt;(&amp;LevelIid, &amp;GlobalTransform)&gt;,
-    ldtk_projects: Query&lt;&amp;LdtkProjectHandle&gt;,
-    ldtk_project_assets: Res&lt;Assets&lt;LdtkProject&gt;&gt;,
-    mut level_selection: ResMut&lt;LevelSelection&gt;,
-) {
-    if let Ok(player_transform) = players.get_single() {
-        let ldtk_project = ldtk_project_assets
-            .get(ldtk_projects.single())
-            .expect(&quot;ldtk project should be loaded before player is spawned&quot;);
-
-        for (level_iid, level_transform) in levels.iter() {
-            let level = ldtk_project
-                .get_raw_level_by_iid(level_iid.get())
-                .expect(&quot;level should exist in only project&quot;);
+</span>{{ #include ../../../examples/collectathon/player.rs:59:74 }}
         }
     }
 }
@@ -231,16 +211,7 @@ Add the raw level's <code>px_wid</code> and <code>pix_hei</code> values to the l
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::ldtk::Level;
 </span><span class="boring">fn foo(level_transform: &amp;GlobalTransform, level: &amp;Level) {
-</span>            let level_bounds = Rect {
-                min: Vec2::new(
-                    level_transform.translation().x,
-                    level_transform.translation().y,
-                ),
-                max: Vec2::new(
-                    level_transform.translation().x + level.px_wid as f32,
-                    level_transform.translation().y + level.px_hei as f32,
-                ),
-            };
+</span>{{ #include ../../../examples/collectathon/player.rs:76:85 }}
 <span class="boring">}
 </span><span class="boring">}</span></code></pre></pre>
 <p>After creating a <code>Rect</code> of the level bounds, check if the player is inside those bounds and update the <code>LevelSelection</code> resource accordingly.
@@ -251,40 +222,7 @@ The full system should look something like this:</p>
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
 </span><span class="boring">#[derive(Component)]
 </span><span class="boring">struct Player;
-</span>fn level_selection_follow_player(
-    players: Query&lt;&amp;GlobalTransform, With&lt;Player&gt;&gt;,
-    levels: Query&lt;(&amp;LevelIid, &amp;GlobalTransform)&gt;,
-    ldtk_projects: Query&lt;&amp;LdtkProjectHandle&gt;,
-    ldtk_project_assets: Res&lt;Assets&lt;LdtkProject&gt;&gt;,
-    mut level_selection: ResMut&lt;LevelSelection&gt;,
-) {
-    if let Ok(player_transform) = players.get_single() {
-        let ldtk_project = ldtk_project_assets
-            .get(ldtk_projects.single())
-            .expect(&quot;ldtk project should be loaded before player is spawned&quot;);
-
-        for (level_iid, level_transform) in levels.iter() {
-            let level = ldtk_project
-                .get_raw_level_by_iid(level_iid.get())
-                .expect(&quot;level should exist in only project&quot;);
-
-            let level_bounds = Rect {
-                min: Vec2::new(
-                    level_transform.translation().x,
-                    level_transform.translation().y,
-                ),
-                max: Vec2::new(
-                    level_transform.translation().x + level.px_wid as f32,
-                    level_transform.translation().y + level.px_hei as f32,
-                ),
-            };
-
-            if level_bounds.contains(player_transform.translation().truncate()) {
-                *level_selection = LevelSelection::Iid(level_iid.clone());
-            }
-        }
-    }
-}
+</span>{{ #include ../../../examples/collectathon/player.rs:59:92 }}
 <span class="boring">}</span></code></pre></pre>
 
                     </main>

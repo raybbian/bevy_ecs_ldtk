@@ -182,8 +182,7 @@ This code is used in the <code>field_instances</code> cargo example, and facilit
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>#[derive(Debug, Default, Deref, DerefMut, Component)]
-pub struct UnresolvedMotherRef(Option&lt;EntityIid&gt;);
+</span>{{ #include ../../../examples/field_instances/mother.rs:10:11 }}
 <span class="boring">}</span></code></pre></pre>
 <p>Create a method for constructing this component from an <code>&amp;EntityInstance</code>.
 This should retrieve the value of the entity reference field instance on the LDtk entity.
@@ -192,18 +191,8 @@ Most likely, you'll use a hard-coded field identifier (&quot;mother&quot; in thi
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span><span class="boring">pub struct UnresolvedMotherRef(Option&lt;EntityIid&gt;);
-</span>impl UnresolvedMotherRef {
-    pub fn from_mother_field(entity_instance: &amp;EntityInstance) -&gt; UnresolvedMotherRef {
-        UnresolvedMotherRef(
-            entity_instance
-                .get_maybe_entity_ref_field(&quot;mother&quot;)
-                .expect(&quot;expected entity to have mother entity ref field&quot;)
-                .as_ref()
-                .map(|entity_ref| EntityIid::new(entity_ref.entity_iid.clone())),
-        )
-    }
-}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:11 }}
+</span>{{ #include ../../../examples/field_instances/mother.rs:13:23 }}
 <span class="boring">}</span></code></pre></pre>
 <p>Add this component to the <code>LdtkEntity</code> and configure it to be constructed using this method.
 This guide assumes that you've already registered this bundle to the app.</p>
@@ -211,16 +200,11 @@ This guide assumes that you've already registered this bundle to the app.</p>
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span><span class="boring">#[derive(Debug, Default, Deref, DerefMut, Component)]
-</span><span class="boring">pub struct UnresolvedMotherRef(Option&lt;EntityIid&gt;);
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:10 }}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:11 }}
 </span><span class="boring">impl UnresolvedMotherRef { fn from_mother_field(_: &amp;EntityInstance) -&gt; UnresolvedMotherRef { todo!() } }
-</span>#[derive(Default, Bundle, LdtkEntity)]
-pub struct EnemyBundle {
-    #[with(UnresolvedMotherRef::from_mother_field)]
-    unresolved_mother: UnresolvedMotherRef,
-    #[sprite_sheet]
-    sprite_sheet: Sprite,
-}
+</span>{{ #include ../../../examples/field_instances/enemy.rs:7:8}}
+{{ #include ../../../examples/field_instances/enemy.rs:15:19}}
 <span class="boring">}</span></code></pre></pre>
 <h2 id="resolve-reference-in-post-processing"><a class="header" href="#resolve-reference-in-post-processing">Resolve reference in post-processing</a></h2>
 <p>Create a second relational component that stores the actual bevy <code>Entity</code> that this <code>Unresolved</code> reference should &quot;resolve&quot; to.</p>
@@ -228,41 +212,18 @@ pub struct EnemyBundle {
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span>#[derive(Debug, Deref, DerefMut, Component, Reflect)]
-pub struct Mother(Entity);
+</span>{{ #include ../../../examples/field_instances/mother.rs:26:27 }}
 <span class="boring">}</span></code></pre></pre>
 <p>Finally, create a <a href="../explanation/game-logic-integration.html#post-processing-plugin-spawned-entities">&quot;post-processing&quot;</a> system that takes entities with the <code>Unresolved</code> component, finds the entity with the matching <code>EntityIid</code>, and replaces the <code>Unresolved</code> component with the relational component.</p>
 <pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use bevy::prelude::*;
 </span><span class="boring">use bevy_ecs_ldtk::prelude::*;
-</span><span class="boring">#[derive(Debug, Default, Deref, DerefMut, Component)]
-</span><span class="boring">pub struct UnresolvedMotherRef(Option&lt;EntityIid&gt;);
-</span><span class="boring">#[derive(Debug, Deref, DerefMut, Component, Reflect)]
-</span><span class="boring">pub struct Mother(Entity);
-</span>pub fn resolve_mother_references(
-    mut commands: Commands,
-    unresolved_mothers: Query&lt;(Entity, &amp;UnresolvedMotherRef), Added&lt;UnresolvedMotherRef&gt;&gt;,
-    ldtk_entities: Query&lt;(Entity, &amp;EntityIid)&gt;,
-) {
-    for (child_entity, unresolved_mother_ref) in unresolved_mothers.iter() {
-        if let Some(mother_iid) = unresolved_mother_ref.0.as_ref() {
-            let (mother_entity, _) = ldtk_entities
-                .iter()
-                .find(|(_, iid)| *iid == mother_iid)
-                .expect(&quot;enemy's mother entity should exist&quot;);
-
-            commands
-                .entity(child_entity)
-                .remove::&lt;UnresolvedMotherRef&gt;()
-                .insert(Mother(mother_entity));
-        } else {
-            commands
-                .entity(child_entity)
-                .remove::&lt;UnresolvedMotherRef&gt;();
-        }
-    }
-}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:10 }}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:11 }}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:26 }}
+</span><span class="boring">{{ #include ../../../examples/field_instances/mother.rs:27 }}
+</span>{{ #include ../../../examples/field_instances/mother.rs:29:51 }}
 <span class="boring">}</span></code></pre></pre>
 
                     </main>
