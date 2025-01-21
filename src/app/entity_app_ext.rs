@@ -131,7 +131,7 @@ mod tests {
     use super::*;
     use crate::{
         components::EntityInstance,
-        ldtk::{LayerInstance, TilesetDefinition},
+        ldtk::{loaded_level::LoadedLevel, LayerInstance, TilesetDefinition},
     };
 
     #[derive(Default, Component, Debug)]
@@ -150,6 +150,7 @@ mod tests {
         fn bundle_entity(
             _: &EntityInstance,
             _: &LayerInstance,
+            _: LoadedLevel,
             _: Option<&Handle<Image>>,
             _: Option<&TilesetDefinition>,
             _: &AssetServer,

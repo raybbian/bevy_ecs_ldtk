@@ -316,6 +316,7 @@ pub fn spawn_level(
                             let predicted_worldly = Worldly::bundle_entity(
                                 entity_instance,
                                 layer_instance,
+                                level,
                                 tileset,
                                 tileset_definition,
                                 asset_server,
@@ -344,6 +345,7 @@ pub fn spawn_level(
                                     &mut entity_commands,
                                     entity_instance,
                                     layer_instance,
+                                    level,
                                     tileset,
                                     tileset_definition,
                                     asset_server,

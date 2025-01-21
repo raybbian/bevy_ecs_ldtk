@@ -1,6 +1,6 @@
 use crate::{
     components::{EntityInstanceBundle, GridCoords, Worldly},
-    ldtk::{EntityInstance, LayerInstance, TilesetDefinition},
+    ldtk::{loaded_level::LoadedLevel, EntityInstance, LayerInstance, TilesetDefinition},
     utils,
 };
 use bevy::{ecs::system::EntityCommands, prelude::*};
@@ -325,17 +325,26 @@ pub trait LdtkEntity {
     fn bundle_entity(
         entity_instance: &EntityInstance,
         layer_instance: &LayerInstance,
+        level: LoadedLevel,
         tileset: Option<&Handle<Image>>,
         tileset_definition: Option<&TilesetDefinition>,
         asset_server: &AssetServer,
         texture_atlases: &mut Assets<TextureAtlasLayout>,
     ) -> Self;
+
+    fn extend_entity<'b, 'a>(
+        commands: &'b mut EntityCommands<'a>,
+        _bundle: &Self,
+    ) -> &'b mut EntityCommands<'a> {
+        commands
+    }
 }
 
 impl LdtkEntity for EntityInstanceBundle {
     fn bundle_entity(
         entity_instance: &EntityInstance,
         _: &LayerInstance,
+        _: LoadedLevel,
         _: Option<&Handle<Image>>,
         _: Option<&TilesetDefinition>,
         _: &AssetServer,
@@ -351,6 +360,7 @@ impl LdtkEntity for Sprite {
     fn bundle_entity(
         _: &EntityInstance,
         _: &LayerInstance,
+        _: LoadedLevel,
         tileset: Option<&Handle<Image>>,
         _: Option<&TilesetDefinition>,
         _: &AssetServer,
@@ -364,6 +374,7 @@ impl LdtkEntity for Worldly {
     fn bundle_entity(
         entity_instance: &EntityInstance,
         _: &LayerInstance,
+        _: LoadedLevel,
         _: Option<&Handle<Image>>,
         _: Option<&TilesetDefinition>,
         _: &AssetServer,
@@ -377,6 +388,7 @@ impl LdtkEntity for GridCoords {
     fn bundle_entity(
         entity_instance: &EntityInstance,
         layer_instance: &LayerInstance,
+        _: LoadedLevel,
         _: Option<&Handle<Image>>,
         _: Option<&TilesetDefinition>,
         _: &AssetServer,
@@ -406,6 +418,7 @@ pub trait PhantomLdtkEntityTrait {
         commands: &'b mut EntityCommands<'a>,
         entity_instance: &EntityInstance,
         layer_instance: &LayerInstance,
+        level: LoadedLevel,
         tileset: Option<&Handle<Image>>,
         tileset_definition: Option<&TilesetDefinition>,
         asset_server: &AssetServer,
@@ -419,19 +432,23 @@ impl<B: LdtkEntity + Bundle> PhantomLdtkEntityTrait for PhantomLdtkEntity<B> {
         entity_commands: &'b mut EntityCommands<'a>,
         entity_instance: &EntityInstance,
         layer_instance: &LayerInstance,
+        level: LoadedLevel,
         tileset: Option<&Handle<Image>>,
         tileset_definition: Option<&TilesetDefinition>,
         asset_server: &AssetServer,
         texture_atlases: &mut Assets<TextureAtlasLayout>,
     ) -> &'b mut EntityCommands<'a> {
-        entity_commands.insert(B::bundle_entity(
+        let bundle = B::bundle_entity(
             entity_instance,
             layer_instance,
+            level,
             tileset,
             tileset_definition,
             asset_server,
             texture_atlases,
-        ))
+        );
+        B::extend_entity(entity_commands, &bundle);
+        entity_commands.insert(bundle)
     }
 }
 
